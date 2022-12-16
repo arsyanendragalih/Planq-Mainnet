@@ -1,0 +1,137 @@
+#!/bin/bash
+clear
+echo ""
+echo "Wait ..."
+sleep 3
+clear
+       
+echo -e "\033[0;35m"
+echo "    :::     :::::::::  :::::::::      :::     ::::    ::::  :::::::::: "; 
+echo "  :+: :+:   :+:    :+: :+:    :+:   :+: :+:   +:+:+: :+:+:+ :+:        ";
+echo " +:+   +:+  +:+    +:+ +:+    +:+  +:+   +:+  +:+ +:+:+ +:+ +:+        ";
+echo "+#++:++#++: +#++:++#+  +#++:++#:  +#++:++#++: +#+  +:+  +#+ +#++:++#   ";
+echo "+#+     +#+ +#+        +#+    +#+ +#+     +#+ +#+       +#+ +#+        ";
+echo "#+#     #+# #+#        #+#    #+# #+#     #+# #+#       #+# #+#        ";
+echo "###     ### ###        ###    ### ###     ### ###       ### ########## ";
+echo -e "\e[0m"
+       
+                                                               
+
+sleep 2
+
+# set vars
+if [ ! $NODENAME ]; then
+	read -p "Enter node name: " NODENAME
+	echo 'export NODENAME='$NODENAME >> $HOME/.bash_profile
+fi
+
+if [ ! $WALLET ]; then
+	echo "export WALLET=wallet" >> $HOME/.bash_profile
+fi
+echo "export PLANQ_CHAIN_ID=planq_7070-2" >> $HOME/.bash_profile
+source $HOME/.bash_profile
+
+echo '================================================='
+echo -e "Your node name: \e[1m\e[32m$NODENAME\e[0m"
+echo -e "Your wallet name: \e[1m\e[32m$WALLET\e[0m"
+echo -e "Your chain name: \e[1m\e[32m$PLANQ_CHAIN_ID\e[0m"
+echo '================================================='
+sleep 2
+
+echo -e "\e[1m\e[32m1. Updating packages... \e[0m" && sleep 1
+# update
+sudo apt update && sudo apt upgrade -y
+
+echo -e "\e[1m\e[32m2. Installing dependencies... \e[0m" && sleep 1
+# packages
+sudo apt install curl build-essential git wget jq make gcc tmux chrony -y
+
+# install go
+if ! [ -x "$(command -v go)" ]; then
+  ver="1.18.2"
+  cd $HOME
+  wget "https://golang.org/dl/go$ver.linux-amd64.tar.gz"
+  sudo rm -rf /usr/local/go
+  sudo tar -C /usr/local -xzf "go$ver.linux-amd64.tar.gz"
+  rm "go$ver.linux-amd64.tar.gz"
+  echo "export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin" >> ~/.bash_profile
+  source ~/.bash_profile
+fi
+
+echo -e "\e[1m\e[32m3. Downloading and building binaries... \e[0m" && sleep 1
+# download and build binaries
+cd $HOME && rm -rf planq
+git clone https://github.com/planq-network/planq.git
+sudo cp planq /usr/local/bin/planq
+
+
+# init
+planqd init $NODENAME --chain-id=$PLANQ_CHAIN_ID --home $HOME/.planqd
+
+# download genesis and addrbook
+
+# peers
+PEERS=`curl -sL https://raw.githubusercontent.com/planq-network/networks/main/mainnet/peers.txt | sort -R | head -n 10 | awk '{print $1}' | paste -s -d, -`
+sed -i.bak -e "s/^persistent_peers *=.*/persistent_peers = \"$PEERS\"/" ~/.planqd/config/config.toml
+
+# seeds
+SEEDS=`curl -sL https://raw.githubusercontent.com/planq-network/networks/main/mainnet/seeds.txt | awk '{print $1}' | paste -s -d, -`
+sed -i.bak -e "s/^seeds =.*/seeds = \"$SEEDS\"/" ~/.planqd/config/config.toml
+
+
+
+# config pruning
+
+CONFIG_TOML="$HOME/.planqd/config/config.toml"
+ sed -i 's/timeout_propose =.*/timeout_propose = "100ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_propose_delta =.*/timeout_propose_delta = "500ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_prevote =.*/timeout_prevote = "100ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_prevote_delta =.*/timeout_prevote_delta = "500ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_precommit =.*/timeout_precommit = "100ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_precommit_delta =.*/timeout_precommit_delta = "500ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_commit =.*/timeout_commit = "1s"/g' $CONFIG_TOML
+ sed -i 's/skip_timeout_commit =.*/skip_timeout_commit = false/g' $CONFIG_TOML
+
+PRUNING="custom"
+PRUNING_KEEP_RECENT="100"
+PRUNING_INTERVAL="10"
+
+sed -i -e "s/^pruning *=.*/pruning = \"$PRUNING\"/" $HOME/.planqd/config/app.toml
+sed -i -e "s/^pruning-keep-recent *=.*/pruning-keep-recent = \
+\"$PRUNING_KEEP_RECENT\"/" $HOME/.planqd/config/app.toml
+sed -i -e "s/^pruning-interval *=.*/pruning-interval = \
+\"$PRUNING_INTERVAL\"/" $HOME/.planqd/config/app.toml
+
+# set peers and seeds
+
+
+# set minimum gas price and timeout commit
+sed -i 's/minimum-gas-prices =.*/minimum-gas-prices = "0.025uheart"/g' $HOME/.planqd/config/app.toml
+
+echo -e "\e[1m\e[32m4. Starting service... \e[0m" && sleep 1
+
+# create service
+sudo tee /etc/systemd/system/planqd.service > /dev/null <<EOF
+[Unit]
+Description=planq
+After=network-online.target
+
+[Service]
+User=$USER
+ExecStart=$(which planqd) start --home $HOME/.planqd
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# start service
+sudo systemctl daemon-reload
+sudo systemctl enable planqd
+sudo systemctl restart planqd
+
+echo '=============== KELAR CUY, JAN LUPA BUAT WALLET & REQ FAUCET ==================='
+echo -e 'To check logs: \e[1m\e[32mjournalctl -u planqd -f -o cat\e[0m'
+echo -e "To check sync status: \e[1m\e[32mplanqd status 2>&1 | jq .SyncInfo\e[0m"
