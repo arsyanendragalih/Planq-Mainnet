@@ -5,7 +5,7 @@
 </div>
 
 
-# Planq Mainnet
+# PLANQ MAINNET
 
 - [Website](https://planq.network/)
 
