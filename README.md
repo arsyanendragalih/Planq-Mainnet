@@ -104,7 +104,7 @@ planqd tx staking edit-validator \
  
 **Delegate to Validator**
 ```
-planqd tx staking delegate $(planqd tendermint show-validator) 1000000atplanq --from $WALLET --chain-id $PLANQ_CHAIN_ID --fees 5000atplanq
+planqd tx staking delegate $(planqd keys show wallet --bech val -a) 1000000atplanq --from $WALLET --chain-id $PLANQ_CHAIN_ID --fees 5000atplanq
 ```
 
 **Unjail Validator**
