@@ -7,19 +7,17 @@
 
 # Planq Mainnet
 
-- [Website](https://humans.ai/)
+- [Website](https://planq.network/)
 
-- [Explorer](https://explorer.humans.zone/humans-testnet)
+- [Explorer](https://explorer.planq.network/)
 
-- [Discord](https://discord.gg/humansdotai)
+- [Discord](https://discord.gg/zmjTn49k)
 
-- [Medium](https://medium.com/humansdotai)
+- [Reddit](https://www.reddit.com/r/planq_network)
 
-- [Twitter](https://twitter.com/humansdotai)
+- [Whitepaper](https://planq.network/whitepaper)
 
-- [NFT Collection](https://opensea.io/collection/heartbeatsnfts)
-
-- [Tokenomics](https://docs.google.com/spreadsheets/d/11Zc1Ox13oUKiGQw79XJBAPHqEvJCnArnGgXcUc6Noz8/edit#gid=1434488738)
+- [Twitter](https://twitter.com/PlanqFoundation)
 
 ## Hardware requirements
 - OS : Ubuntu Linux 20.04 (LTS) x64
@@ -111,7 +109,7 @@ planqd tx staking delegate $(planqd tendermint show-validator) 1000000atplanq --
 
 **Unjail Validator**
 ```
-humansd tx slashing unjail \
+planqd tx slashing unjail \
   --broadcast-mode=block \
   --from=$WALLET \
   --chain-id=$PLANQ_CHAIN_ID \
