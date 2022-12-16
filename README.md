@@ -93,7 +93,7 @@ planqd keys show wallet --bech val -a
 **Edit Validator**
 
 ```
-humansd tx staking edit-validator \
+planqd tx staking edit-validator \
   --moniker=$NODENAME \
   --identity=<your_keybase_id> \
   --website="<your_website>" \
